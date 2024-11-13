@@ -23,7 +23,7 @@ namespace CK.DeviceModel.ByTopic.Tests
         AutomaticServices _auto;
 
         [OneTimeSetUp]
-        public void OneTimeSetUp()
+        public async Task OneTimeSetUpAsync()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( CrisBackgroundExecutorService ),
@@ -41,7 +41,8 @@ namespace CK.DeviceModel.ByTopic.Tests
                                                   typeof( ByTopicCommandHandler ),
                                                   typeof( Validators )
                                                   );
-            _auto = configuration.RunSuccessfully().CreateAutomaticServices();
+            var engineResult = await configuration.RunSuccessfullyAsync();
+            _auto = engineResult.CreateAutomaticServices();
         }
 
         [OneTimeTearDown]
