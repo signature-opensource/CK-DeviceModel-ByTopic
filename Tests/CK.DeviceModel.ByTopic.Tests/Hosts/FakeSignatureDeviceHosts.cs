@@ -2,50 +2,46 @@ using CK.Core;
 using CK.DeviceModel.ByTopic.Commands;
 using CK.DeviceModel.ByTopic.IO.Commands;
 using CK.DeviceModel.ByTopic.IO.Host;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace CK.DeviceModel.ByTopic.Tests.Hosts
+namespace CK.DeviceModel.ByTopic.Tests.Hosts;
+
+public class FakeSignatureDeviceHosts : IAutoService, ITopicTargetAwareDeviceHost
 {
-    public class FakeSignatureDeviceHosts : IAutoService, ITopicTargetAwareDeviceHost
+    public string DeviceHostName { get; set; }
+
+    public List<string> Topics { get; set; }
+
+    public FakeSignatureDeviceHosts()
     {
-        public string DeviceHostName { get; set; }
-
-        public List<string> Topics { get; set; }
-
-        public FakeSignatureDeviceHosts()
+        DeviceHostName = nameof( FakeSignatureDeviceHosts );
+        Topics = new List<string>()
         {
-            DeviceHostName = nameof( FakeSignatureDeviceHosts );
-            Topics = new List<string>()
-            {
-                "Test",
-                "Test-1",
-                "Test-FakeSignatureDevice",
-            };
+            "Test",
+            "Test-1",
+            "Test-FakeSignatureDevice",
+        };
+    }
+
+    public ValueTask<bool> HandleAsync( IActivityMonitor monitor, ICommandDeviceTopicTarget cmd )
+    {
+        if( !Topics.Contains( cmd.Topic ) )
+        {
+            return ValueTask.FromResult( false );
         }
 
-        public async ValueTask<bool> HandleAsync( IActivityMonitor monitor, ICommandDeviceTopicTarget cmd )
+        if( cmd is ITurnOffLocationCommand )
         {
-            if( !Topics.Contains( cmd.Topic ) )
-            {
-                return false;
-            }
-
-            if( cmd is ITurnOffLocationCommand )
-            {
-                return true;
-            }
-            else if( cmd is ITurnOnLocationCommand )
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            return ValueTask.FromResult( true );
+        }
+        else if( cmd is ITurnOnLocationCommand )
+        {
+            return ValueTask.FromResult( true );
+        }
+        else
+        {
+            return ValueTask.FromResult( false );
         }
     }
 }

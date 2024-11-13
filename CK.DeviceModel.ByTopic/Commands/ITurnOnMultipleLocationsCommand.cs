@@ -1,10 +1,9 @@
 using CK.Cris;
 using System.Collections.Generic;
 
-namespace CK.DeviceModel.ByTopic.Commands
+namespace CK.DeviceModel.ByTopic.Commands;
+
+public interface ITurnOnMultipleLocationsCommand : ICommand<ISwitchMultipleLocationsCommandResult>
 {
-    public interface ITurnOnMultipleLocationsCommand : ICommand<ISwitchMultipleLocationsCommandResult>
-    {
-        IList<ITurnOnLocationCommand> Locations { get; }
-    }
+    IList<ITurnOnLocationCommand> Locations { get; }
 }

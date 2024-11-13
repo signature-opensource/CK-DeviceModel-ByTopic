@@ -1,10 +1,9 @@
 using CK.Core;
 
-namespace CK.DeviceModel.ByTopic
+namespace CK.DeviceModel.ByTopic;
+
+public interface ITopicColor : IPoco
 {
-    public interface ITopicColor : IPoco
-    {
-        public ColorLocation Color { get; set; }
-        public bool IsBlinking { get; set; }
-    }
+    public ColorLocation Color { get; set; }
+    public bool IsBlinking { get; set; }
 }

@@ -1,14 +1,13 @@
 
-namespace CK.DeviceModel.ByTopic
+namespace CK.DeviceModel.ByTopic;
+
+public enum ColorLocation
 {
-    public enum ColorLocation
-    {
-        White,
-        Red,
-        Green,
-        Blue,
-        Yellow,
-        Magenta,
-        Cyan
-    }
+    White,
+    Red,
+    Green,
+    Blue,
+    Yellow,
+    Magenta,
+    Cyan
 }

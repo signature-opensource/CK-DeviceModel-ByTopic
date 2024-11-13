@@ -1,10 +1,8 @@
 using CK.Cris;
 using CK.DeviceModel.ByTopic.IO.Commands;
-using System;
 
-namespace CK.DeviceModel.ByTopic.Commands
+namespace CK.DeviceModel.ByTopic.Commands;
+
+public interface ITurnOffLocationCommand : ICommand<ISwitchLocationCommandResult>, ICommandDeviceTopicTarget
 {
-    public interface ITurnOffLocationCommand : ICommand<ISwitchLocationCommandResult>, ICommandDeviceTopicTarget
-    {
-    }
 }
