@@ -3,6 +3,8 @@
   <PropertyGroup>
     <!-- See https://www.meziantou.net/csharp-compiler-strict-mode.htm -->
     <Features>strict</Features>
+    <!-- Nullable Reference Type is not an option. -->
+    <Nullable>enable</Nullable>
     <!-- Simple IsTestProject and IsInTestsFolder variables. -->
     <IsTestProject Condition=" '$(IsTestProject)' == '' And $(MSBuildProjectName.EndsWith('.Tests'))">true</IsTestProject>
     <IsInTestsFolder Condition="$(MSBuildProjectDirectory.Contains('\Tests\')) Or $(MSBuildProjectDirectory.Contains('/Tests/'))">true</IsInTestsFolder>
