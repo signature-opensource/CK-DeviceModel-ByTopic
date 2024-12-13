@@ -47,9 +47,9 @@ public class ByTopicTests
     }
 
     [OneTimeTearDown]
-    public void OneTimeDearDown()
+    public async Task OneTimeDearDownAsync()
     {
-        _auto.Dispose();
+        await _auto.DisposeAsync();
     }
 
     [Test]
