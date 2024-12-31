@@ -1,19 +1,16 @@
 using CK.Core;
-using CK.Cris;
-using CK.DeviceModel.ByTopic.IO.Commands;
+using CK.IO.DeviceModel;
 using System.Text.RegularExpressions;
 
-namespace CK.DeviceModel.ByTopic.IO;
+namespace CK.Cris.DeviceModel;
 
 public sealed partial class Validators : IAutoService
 {
-    static Regex _deviceFullName = new Regex( @"\w+(/\w+)?", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant );
-
 
     [IncomingValidator]
     public void Normalize( UserMessageCollector collector, ICommandDeviceTopicTarget cmd )
     {
-        if( cmd.DeviceFullName != null && !_deviceFullName.IsMatch( cmd.DeviceFullName ) )
+        if( cmd.DeviceFullName != null && !DeviceFullNameValidator().IsMatch( cmd.DeviceFullName ) )
         {
             collector.Error( $"Invalid DeviceFullName." );
         }
@@ -23,5 +20,8 @@ public sealed partial class Validators : IAutoService
             cmd.Topic = cmd.Topic.Substring( 1 );
         }
     }
+
+    [GeneratedRegex( @"\w+(/\w+)?", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant )]
+    private static partial Regex DeviceFullNameValidator();
 
 }

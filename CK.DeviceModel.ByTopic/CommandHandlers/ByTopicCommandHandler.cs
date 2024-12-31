@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Cris;
-using CK.DeviceModel.ByTopic.Commands;
-using CK.DeviceModel.ByTopic.IO.Host;
+using CK.Cris.DeviceModel;
+using CK.IO.DeviceModel.ByTopic.Commands;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -26,7 +26,7 @@ public class ByTopicCommandHandler : IAutoService
     }
 
     [CommandHandler]
-    public async Task<ISwitchLocationCommandResult> HandleTurnOnLocationCommandAsync( IActivityMonitor monitor, ITurnOnLocationCommand cmd )
+    public async Task<ISwitchTopicCommandResult> HandleTurnOnTopicCommandAsync( IActivityMonitor monitor, ITurnOnTopicCommand cmd )
     {
         var targets = ForDeviceFullName( cmd.DeviceFullName );
         var resultByDeviceName = new Dictionary<string, bool>();
@@ -44,23 +44,23 @@ public class ByTopicCommandHandler : IAutoService
     }
 
     [CommandHandler]
-    public async Task<ISwitchMultipleLocationsCommandResult> HandleTurnOnMultipleLocationsCommandAsync( IActivityMonitor monitor, ITurnOnMultipleLocationsCommand cmd )
+    public async Task<ISwitchMultipleTopicsCommandResult> HandleTurnOnMultipleTopicsCommandAsync( IActivityMonitor monitor, ITurnOnMultipleTopicsCommand cmd )
     {
-        var turnOnLocationCommandResults = new List<ISwitchLocationCommandResult>();
-        foreach( var c in cmd.Locations )
+        var turnOnTopicCommandResults = new List<ISwitchTopicCommandResult>();
+        foreach( var c in cmd.Topics )
         {
-            turnOnLocationCommandResults.Add( await HandleTurnOnLocationCommandAsync( monitor, c ));
+            turnOnTopicCommandResults.Add( await HandleTurnOnTopicCommandAsync( monitor, c ));
         }
 
         return cmd.CreateResult( r =>
         {
-            r.Results.AddRange(turnOnLocationCommandResults);
+            r.Results.AddRange(turnOnTopicCommandResults);
         } );
     }
 
 
     [CommandHandler]
-    public async Task<ISwitchLocationCommandResult> HandleTurnOffLocationCommandAsync( IActivityMonitor monitor, ITurnOffLocationCommand cmd )
+    public async Task<ISwitchTopicCommandResult> HandleTurnOffTopicCommandAsync( IActivityMonitor monitor, ITurnOffTopicCommand cmd )
     {
         var targets = ForDeviceFullName( cmd.DeviceFullName );
         var resultByDeviceName = new Dictionary<string, bool>();
@@ -78,17 +78,17 @@ public class ByTopicCommandHandler : IAutoService
     }
 
     [CommandHandler]
-    public async Task<ISwitchMultipleLocationsCommandResult> HandleTurnOffMultipleLocationsCommandAsync( IActivityMonitor monitor, ITurnOffMultipleLocationsCommand cmd )
+    public async Task<ISwitchMultipleTopicsCommandResult> HandleTurnOffMultipleTopicsCommandAsync( IActivityMonitor monitor, ITurnOffMultipleTopicsCommand cmd )
     {
-        var turnOffLocationCommandResults = new List<ISwitchLocationCommandResult>();
-        foreach( var c in cmd.Locations )
+        var turnOffTopicCommandResults = new List<ISwitchTopicCommandResult>();
+        foreach( var c in cmd.Topics )
         {
-            turnOffLocationCommandResults.Add( await HandleTurnOffLocationCommandAsync( monitor, c ) );
+            turnOffTopicCommandResults.Add( await HandleTurnOffTopicCommandAsync( monitor, c ) );
         }
 
         return cmd.CreateResult( r =>
         {
-            r.Results.AddRange(turnOffLocationCommandResults);
+            r.Results.AddRange(turnOffTopicCommandResults);
         } );
     }
 

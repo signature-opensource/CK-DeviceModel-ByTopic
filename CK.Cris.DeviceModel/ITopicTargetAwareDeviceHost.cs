@@ -1,8 +1,7 @@
 using CK.Core;
-using CK.DeviceModel.ByTopic.IO.Commands;
-using System.Threading.Tasks;
+using CK.IO.DeviceModel;
 
-namespace CK.DeviceModel.ByTopic.IO.Host;
+namespace CK.Cris.DeviceModel;
 
 [IsMultiple]
 public interface ITopicTargetAwareDeviceHost

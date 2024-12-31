@@ -1,7 +1,7 @@
 using CK.Core;
-using CK.DeviceModel.ByTopic.Commands;
-using CK.DeviceModel.ByTopic.IO.Commands;
-using CK.DeviceModel.ByTopic.IO.Host;
+using CK.Cris.DeviceModel;
+using CK.IO.DeviceModel;
+using CK.IO.DeviceModel.ByTopic.Commands;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -31,11 +31,11 @@ public class FakeSignatureDeviceHosts : IAutoService, ITopicTargetAwareDeviceHos
             return ValueTask.FromResult( false );
         }
 
-        if( cmd is ITurnOffLocationCommand )
+        if( cmd is ITurnOffTopicCommand )
         {
             return ValueTask.FromResult( true );
         }
-        else if( cmd is ITurnOnLocationCommand )
+        else if( cmd is ITurnOnTopicCommand )
         {
             return ValueTask.FromResult( true );
         }

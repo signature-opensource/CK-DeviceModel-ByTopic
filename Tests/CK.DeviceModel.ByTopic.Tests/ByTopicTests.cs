@@ -1,10 +1,11 @@
 using CK.Core;
 using CK.Cris;
+using CK.Cris.DeviceModel;
 using CK.DeviceModel.ByTopic.CommandHandlers;
-using CK.DeviceModel.ByTopic.Commands;
-using CK.DeviceModel.ByTopic.IO;
 using CK.DeviceModel.ByTopic.Tests.Helpers;
 using CK.DeviceModel.ByTopic.Tests.Hosts;
+using CK.IO.DeviceModel.ByTopic;
+using CK.IO.DeviceModel.ByTopic.Commands;
 using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,13 +33,12 @@ public class ByTopicTests
                                               typeof( CrisExecutionContext ),
                                               typeof( FakeLEDStripHosts ),
                                               typeof( FakeSignatureDeviceHosts ),
-                                              typeof( ISwitchLocationCommandResult ),
-                                              typeof( ITopicColor ),
-                                              typeof( ISwitchMultipleLocationsCommandResult ),
-                                              typeof( ITurnOffLocationCommand ),
-                                              typeof( ITurnOnLocationCommand ),
-                                              typeof( ITurnOffMultipleLocationsCommand ),
-                                              typeof( ITurnOnMultipleLocationsCommand ),
+                                              typeof( ISwitchTopicCommandResult ),
+                                              typeof( ISwitchMultipleTopicsCommandResult ),
+                                              typeof( ITurnOffTopicCommand ),
+                                              typeof( ITurnOnTopicCommand ),
+                                              typeof( ITurnOffMultipleTopicsCommand ),
+                                              typeof( ITurnOnMultipleTopicsCommand ),
                                               typeof( ByTopicCommandHandler ),
                                               typeof( Validators )
                                               );
@@ -62,11 +62,11 @@ public class ByTopicTests
 
 
             var topic = "/Test";
-            var turnOffCmd = pocoDirectory.Create<ITurnOffLocationCommand>( r =>
+            var turnOffCmd = pocoDirectory.Create<ITurnOffTopicCommand>( r =>
             {
                 r.Topic = topic;
             } );
-            var result = await CrisHelper.SendCrisCommandWithResultAsync<ITurnOffLocationCommand, ISwitchLocationCommandResult>( turnOffCmd, TestHelper.Monitor, cbe );
+            var result = await CrisHelper.SendCrisCommandWithResultAsync<ITurnOffTopicCommand, ISwitchTopicCommandResult>( turnOffCmd, TestHelper.Monitor, cbe );
 
             ClassicAssert.NotNull( result );
             ClassicAssert.IsNotEmpty( result.ResultByDeviceName );
@@ -89,7 +89,7 @@ public class ByTopicTests
             var cbe = scope.ServiceProvider.GetRequiredService<CrisBackgroundExecutor>();
             var pocoDirectory = scope.ServiceProvider.GetRequiredService<PocoDirectory>();
 
-            var turnOffCmd = pocoDirectory.Create<ITurnOffLocationCommand>( r =>
+            var turnOffCmd = pocoDirectory.Create<ITurnOffTopicCommand>( r =>
             {
                 r.Topic = "Test";
                 r.DeviceFullName = "?";
@@ -102,19 +102,19 @@ public class ByTopicTests
     }
 
     [TestCaseSource( nameof( SwitchTestsCases ) )]
-    public async Task can_turn_on_location_Async( (string topic, List<string> deviceThatShouldBeFalse) tc )
+    public async Task can_turn_on_topic_Async( (string topic, List<string> deviceThatShouldBeFalse) tc )
     {
         using( var scope = _auto.Services.CreateScope() )
         {
             var cbe = scope.ServiceProvider.GetRequiredService<CrisBackgroundExecutor>();
             var pocoDirectory = scope.ServiceProvider.GetRequiredService<PocoDirectory>();
 
-            var turnOnCmd = pocoDirectory.Create<ITurnOnLocationCommand>( r =>
+            var turnOnCmd = pocoDirectory.Create<ITurnOnTopicCommand>( r =>
             {
                 r.Topic = tc.topic;
-                r.Colors.Add(pocoDirectory.Create<ITopicColor>(tc => { tc.Color = ColorLocation.Red; }) );
+                r.Colors.Add( ColorTopic.Red );
             } );
-            var result = await CrisHelper.SendCrisCommandWithResultAsync<ITurnOnLocationCommand, ISwitchLocationCommandResult>( turnOnCmd, TestHelper.Monitor, cbe );
+            var result = await CrisHelper.SendCrisCommandWithResultAsync<ITurnOnTopicCommand, ISwitchTopicCommandResult>( turnOnCmd, TestHelper.Monitor, cbe );
 
             ClassicAssert.NotNull( result );
             ClassicAssert.IsNotEmpty( result.ResultByDeviceName );
@@ -135,18 +135,18 @@ public class ByTopicTests
     }
 
     [TestCaseSource( nameof( SwitchTestsCases ) )]
-    public async Task can_turn_off_location_Async( (string topic, List<string> deviceThatShouldBeFalse) tc )
+    public async Task can_turn_off_topic_Async( (string topic, List<string> deviceThatShouldBeFalse) tc )
     {
         using( var scope = _auto.Services.CreateScope() )
         {
             var cbe = scope.ServiceProvider.GetRequiredService<CrisBackgroundExecutor>();
             var pocoDirectory = scope.ServiceProvider.GetRequiredService<PocoDirectory>();
 
-            var turnOffCmd = pocoDirectory.Create<ITurnOffLocationCommand>( r =>
+            var turnOffCmd = pocoDirectory.Create<ITurnOffTopicCommand>( r =>
             {
                 r.Topic = tc.topic;
             } );
-            var result = await CrisHelper.SendCrisCommandWithResultAsync<ITurnOffLocationCommand, ISwitchLocationCommandResult>( turnOffCmd, TestHelper.Monitor, cbe );
+            var result = await CrisHelper.SendCrisCommandWithResultAsync<ITurnOffTopicCommand, ISwitchTopicCommandResult>( turnOffCmd, TestHelper.Monitor, cbe );
 
             ClassicAssert.NotNull( result );
             ClassicAssert.IsNotEmpty( result.ResultByDeviceName );
@@ -175,39 +175,39 @@ public class ByTopicTests
     }
 
     [TestCaseSource( nameof( MultipleSwitchTestsCases ) )]
-    public async Task can_turn_on_multiple_location_Async( Dictionary<string, List<Switch>> tc )
+    public async Task can_turn_on_multiple_topic_Async( Dictionary<string, List<Switch>> tc )
     {
         using( var scope = _auto.Services.CreateScope() )
         {
             var cbe = scope.ServiceProvider.GetRequiredService<CrisBackgroundExecutor>();
             var pocoDirectory = scope.ServiceProvider.GetRequiredService<PocoDirectory>();
 
-            var list = new List<ITurnOnLocationCommand>();
+            var list = new List<ITurnOnTopicCommand>();
             foreach( var item in tc )
             {
-                list.Add( pocoDirectory.Create<ITurnOnLocationCommand>( r =>
+                list.Add( pocoDirectory.Create<ITurnOnTopicCommand>( r =>
                 {
                     r.Topic = item.Key;
-                    r.Colors.Add( pocoDirectory.Create<ITopicColor>( tc => { tc.Color = ColorLocation.Red; } ) );
+                    r.Colors.Add( ColorTopic.Red );
                 } ) );
             }
 
-            var turnOnMultipleCmd = pocoDirectory.Create<ITurnOnMultipleLocationsCommand>( r =>
+            var turnOnMultipleCmd = pocoDirectory.Create<ITurnOnMultipleTopicsCommand>( r =>
             {
-                r.Locations.AddRange( list );
+                r.Topics.AddRange( list );
             } );
-            var result = await CrisHelper.SendCrisCommandWithResultAsync<ITurnOnMultipleLocationsCommand, ISwitchMultipleLocationsCommandResult>( turnOnMultipleCmd, TestHelper.Monitor, cbe );
+            var result = await CrisHelper.SendCrisCommandWithResultAsync<ITurnOnMultipleTopicsCommand, ISwitchMultipleTopicsCommandResult>( turnOnMultipleCmd, TestHelper.Monitor, cbe );
 
             ClassicAssert.NotNull( result );
             ClassicAssert.IsNotEmpty( result.Results );
 
-            foreach( var switchLocationCommandResult in result.Results )
+            foreach( var switchTopicCommandResult in result.Results )
             {
-                var allDevicesOnTopics = tc[switchLocationCommandResult.Topic];
+                var allDevicesOnTopics = tc[switchTopicCommandResult.Topic];
                 ClassicAssert.NotNull( allDevicesOnTopics );
                 ClassicAssert.IsNotEmpty( allDevicesOnTopics );
 
-                foreach( var keyValuePair in switchLocationCommandResult.ResultByDeviceName )
+                foreach( var keyValuePair in switchTopicCommandResult.ResultByDeviceName )
                 {
                     var device = allDevicesOnTopics.First( x => x.DeviceName == keyValuePair.Key );
 
@@ -219,38 +219,38 @@ public class ByTopicTests
     }
 
     [TestCaseSource( nameof( MultipleSwitchTestsCases ) )]
-    public async Task can_turn_off_multiple_location_Async( Dictionary<string, List<Switch>> tc )
+    public async Task can_turn_off_multiple_topic_Async( Dictionary<string, List<Switch>> tc )
     {
         using( var scope = _auto.Services.CreateScope() )
         {
             var cbe = scope.ServiceProvider.GetRequiredService<CrisBackgroundExecutor>();
             var pocoDirectory = scope.ServiceProvider.GetRequiredService<PocoDirectory>();
 
-            var list = new List<ITurnOffLocationCommand>();
+            var list = new List<ITurnOffTopicCommand>();
             foreach( var item in tc )
             {
-                list.Add( pocoDirectory.Create<ITurnOffLocationCommand>( r =>
+                list.Add( pocoDirectory.Create<ITurnOffTopicCommand>( r =>
                 {
                     r.Topic = item.Key;
                 } ) );
             }
 
-            var turnOffMultipleCmd = pocoDirectory.Create<ITurnOffMultipleLocationsCommand>( r =>
+            var turnOffMultipleCmd = pocoDirectory.Create<ITurnOffMultipleTopicsCommand>( r =>
             {
-                r.Locations.AddRange( list );
+                r.Topics.AddRange( list );
             } );
-            var result = await CrisHelper.SendCrisCommandWithResultAsync<ITurnOffMultipleLocationsCommand, ISwitchMultipleLocationsCommandResult>( turnOffMultipleCmd, TestHelper.Monitor, cbe );
+            var result = await CrisHelper.SendCrisCommandWithResultAsync<ITurnOffMultipleTopicsCommand, ISwitchMultipleTopicsCommandResult>( turnOffMultipleCmd, TestHelper.Monitor, cbe );
 
             ClassicAssert.NotNull( result );
             ClassicAssert.IsNotEmpty( result.Results );
 
-            foreach( var switchLocationCommandResult in result.Results )
+            foreach( var switchTopicCommandResult in result.Results )
             {
-                var allDevicesOnTopics = tc[switchLocationCommandResult.Topic];
+                var allDevicesOnTopics = tc[switchTopicCommandResult.Topic];
                 ClassicAssert.NotNull( allDevicesOnTopics );
                 ClassicAssert.IsNotEmpty( allDevicesOnTopics );
 
-                foreach( var keyValuePair in switchLocationCommandResult.ResultByDeviceName )
+                foreach( var keyValuePair in switchTopicCommandResult.ResultByDeviceName )
                 {
                     var device = allDevicesOnTopics.First( x => x.DeviceName == keyValuePair.Key );
 
@@ -302,20 +302,20 @@ public class ByTopicTests
     [TestCase( "Test-FakeLEDStrip", nameof( FakeLEDStripHosts ), true )]
     [TestCase( "Test-FakeSignatureDevice", nameof( FakeSignatureDeviceHosts ), true )]
     [TestCase( "Test-FakeSignatureDevice", nameof( FakeLEDStripHosts ), false )]
-    public async Task can_force_turn_on_location_specific_device_Async( string topic, string deviceFullName, bool isSuccess )
+    public async Task can_force_turn_on_topic_specific_device_Async( string topic, string deviceFullName, bool isSuccess )
     {
         using( var scope = _auto.Services.CreateScope() )
         {
             var cbe = scope.ServiceProvider.GetRequiredService<CrisBackgroundExecutor>();
             var pocoDirectory = scope.ServiceProvider.GetRequiredService<PocoDirectory>();
 
-            var turnOnCmd = pocoDirectory.Create<ITurnOnLocationCommand>( r =>
+            var turnOnCmd = pocoDirectory.Create<ITurnOnTopicCommand>( r =>
             {
                 r.Topic = topic;
-                r.Colors.Add( pocoDirectory.Create<ITopicColor>(tc => { tc.Color = ColorLocation.Red; }) );
+                r.Colors.Add( ColorTopic.Red );
                 r.DeviceFullName = deviceFullName;
             } );
-            var result = await CrisHelper.SendCrisCommandWithResultAsync<ITurnOnLocationCommand, ISwitchLocationCommandResult>( turnOnCmd, TestHelper.Monitor, cbe );
+            var result = await CrisHelper.SendCrisCommandWithResultAsync<ITurnOnTopicCommand, ISwitchTopicCommandResult>( turnOnCmd, TestHelper.Monitor, cbe );
 
             ClassicAssert.NotNull( result );
             ClassicAssert.IsNotEmpty( result.ResultByDeviceName );
@@ -331,19 +331,19 @@ public class ByTopicTests
     [TestCase( "Test-FakeLEDStrip", nameof( FakeLEDStripHosts ), true )]
     [TestCase( "Test-FakeSignatureDevice", nameof( FakeSignatureDeviceHosts ), true )]
     [TestCase( "Test-FakeSignatureDevice", nameof( FakeLEDStripHosts ), false )]
-    public async Task can_turn_off_location_specific_device_Async( string topic, string deviceFullName, bool isSuccess )
+    public async Task can_turn_off_topic_specific_device_Async( string topic, string deviceFullName, bool isSuccess )
     {
         using( var scope = _auto.Services.CreateScope() )
         {
             var cbe = scope.ServiceProvider.GetRequiredService<CrisBackgroundExecutor>();
             var pocoDirectory = scope.ServiceProvider.GetRequiredService<PocoDirectory>();
 
-            var turnOffCmd = pocoDirectory.Create<ITurnOffLocationCommand>( r =>
+            var turnOffCmd = pocoDirectory.Create<ITurnOffTopicCommand>( r =>
             {
                 r.Topic = topic;
                 r.DeviceFullName = deviceFullName;
             } );
-            var result = await CrisHelper.SendCrisCommandWithResultAsync<ITurnOffLocationCommand, ISwitchLocationCommandResult>( turnOffCmd, TestHelper.Monitor, cbe );
+            var result = await CrisHelper.SendCrisCommandWithResultAsync<ITurnOffTopicCommand, ISwitchTopicCommandResult>( turnOffCmd, TestHelper.Monitor, cbe );
 
             ClassicAssert.NotNull( result );
             ClassicAssert.IsNotEmpty( result.ResultByDeviceName );

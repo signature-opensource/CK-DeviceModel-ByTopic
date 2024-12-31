@@ -1,6 +1,6 @@
 using CK.Cris;
 
-namespace CK.DeviceModel.ByTopic.IO.Commands;
+namespace CK.IO.DeviceModel;
 
 /// <summary>
 /// Command part that targets anything that is bound to a topic mangaed by any kind of device host,
