@@ -1,95 +1,81 @@
 using CK.Core;
 using CK.Cris;
 using CK.Cris.DeviceModel;
-using CK.IO.DeviceModel.ByTopic.Commands;
+using CK.IO.DeviceModel;
+using CK.IO.DeviceModel.ByTopic;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace CK.DeviceModel.ByTopic.CommandHandlers;
+namespace CK.DeviceModel.ByTopic;
 
 public class ByTopicCommandHandler : IAutoService
 {
-    readonly IEnumerable<ITopicTargetAwareDeviceHost> _hosts;
+    readonly IEnumerable<ITopicAwareDeviceHost> _hosts;
+    private readonly ScopedUserMessageCollector _collector;
+    readonly PocoDirectory _pocoDirectory;
 
-    public ByTopicCommandHandler( IEnumerable<ITopicTargetAwareDeviceHost> hosts )
+    public ByTopicCommandHandler( IEnumerable<ITopicAwareDeviceHost> hosts, ScopedUserMessageCollector collector, PocoDirectory pocoDirectory )
     {
         _hosts = hosts;
+        _collector = collector;
+        _pocoDirectory = pocoDirectory;
     }
 
-    IEnumerable<ITopicTargetAwareDeviceHost> ForDeviceFullName( string? deviceFullName )
+    IEnumerable<ITopicAwareDeviceHost> ForDeviceFullName( string? deviceHostName )
     {
-        if( string.IsNullOrWhiteSpace( deviceFullName ) ) return _hosts;
+        if( string.IsNullOrWhiteSpace( deviceHostName ) ) return _hosts;
+        if( deviceHostName == "*" ) return _hosts;
 
-        var deviceHostName = deviceFullName.Split( "/" )[0];
         return _hosts.Where( x => x.DeviceHostName.StartsWith( deviceHostName ) );
     }
 
     [CommandHandler]
-    public async Task<ISwitchTopicCommandResult> HandleTurnOnTopicCommandAsync( IActivityMonitor monitor, ITurnOnTopicCommand cmd )
+    public async Task<ISetTopicCommandResult> HandleTurnOnTopicCommandAsync( IActivityMonitor monitor, ISetTopicColorCommand cmd )
     {
-        var targets = ForDeviceFullName( cmd.DeviceFullName );
-        var resultByDeviceName = new Dictionary<string, bool>();
-        foreach( var host in targets )
+        await HandleDeviceTopicCommandAsync( monitor, cmd );
+
+        //TODO: See why we cant use CreateResult
+        return _pocoDirectory.Create<ISetTopicCommandResult>( r =>
         {
-            var result = await host.HandleAsync( monitor, cmd ).ConfigureAwait( false );
-            resultByDeviceName.TryAdd( host.DeviceHostName, result );
-        }
-
-        return cmd.CreateResult( r =>
-         {
-             r.Topic = cmd.Topic;
-             r.ResultByDeviceName = resultByDeviceName;
-         } );
-    }
-
-    [CommandHandler]
-    public async Task<ISwitchMultipleTopicsCommandResult> HandleTurnOnMultipleTopicsCommandAsync( IActivityMonitor monitor, ITurnOnMultipleTopicsCommand cmd )
-    {
-        var turnOnTopicCommandResults = new List<ISwitchTopicCommandResult>();
-        foreach( var c in cmd.Topics )
-        {
-            turnOnTopicCommandResults.Add( await HandleTurnOnTopicCommandAsync( monitor, c ));
-        }
-
-        return cmd.CreateResult( r =>
-        {
-            r.Results.AddRange(turnOnTopicCommandResults);
-        } );
-    }
-
-
-    [CommandHandler]
-    public async Task<ISwitchTopicCommandResult> HandleTurnOffTopicCommandAsync( IActivityMonitor monitor, ITurnOffTopicCommand cmd )
-    {
-        var targets = ForDeviceFullName( cmd.DeviceFullName );
-        var resultByDeviceName = new Dictionary<string, bool>();
-        foreach( var host in targets )
-        {
-            var result = await host.HandleAsync( monitor, cmd ).ConfigureAwait( false );
-            resultByDeviceName.TryAdd( host.DeviceHostName, result );
-        }
-
-        return cmd.CreateResult( r =>
-        {
-            r.Topic = cmd.Topic;
-            r.ResultByDeviceName = resultByDeviceName;
+            r.Success = _collector.ErrorCount == 0;
+            r.UserMessages.AddRange( _collector.UserMessages );
         } );
     }
 
     [CommandHandler]
-    public async Task<ISwitchMultipleTopicsCommandResult> HandleTurnOffMultipleTopicsCommandAsync( IActivityMonitor monitor, ITurnOffMultipleTopicsCommand cmd )
+    public async Task<ISetTopicCommandResult> HandleTurnOnMultipleTopicsCommandAsync( IActivityMonitor monitor, ISetTopicMultiColorCommand cmd )
     {
-        var turnOffTopicCommandResults = new List<ISwitchTopicCommandResult>();
-        foreach( var c in cmd.Topics )
-        {
-            turnOffTopicCommandResults.Add( await HandleTurnOffTopicCommandAsync( monitor, c ) );
-        }
+        await HandleDeviceTopicCommandAsync( monitor, cmd );
 
-        return cmd.CreateResult( r =>
+        //TODO: See why we cant use CreateResult
+        return _pocoDirectory.Create<ISetTopicCommandResult>( r =>
         {
-            r.Results.AddRange(turnOffTopicCommandResults);
+            r.Success = _collector.ErrorCount == 0;
+            r.UserMessages.AddRange( _collector.UserMessages );
         } );
+
     }
 
+    private async Task HandleDeviceTopicCommandAsync( IActivityMonitor monitor, ICommandDeviceTopics cmd )
+    {
+        foreach( var topic in cmd.Topics )
+        {
+            var deviceHostName = topic.Split( "/" )[0];
+            var targets = ForDeviceFullName( deviceHostName );
+            if( targets.Any() )
+            {
+                foreach( var host in targets )
+                {
+                    await host.HandleAsync( monitor, _collector, cmd ).ConfigureAwait( false );
+                }
+            }
+            else
+            {
+                _collector.Error( $"{deviceHostName} not found in hosts" );
+            }
+
+        }
+
+    }
 }

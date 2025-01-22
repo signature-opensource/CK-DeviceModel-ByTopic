@@ -7,7 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CK.IO.DeviceModel\CK.IO.DeviceModel.csproj" />
+    <PackageReference Include="CK.DeviceModel" Version="8.0.1--0013-develop" />
+    <PackageReference Include="CK.IO.DeviceModel" Version="8.0.1--0013-develop" />
   </ItemGroup>
 
 </Project>

@@ -1,13 +1,14 @@
 using CK.Core;
 using CK.Cris.DeviceModel;
 using CK.IO.DeviceModel;
-using CK.IO.DeviceModel.ByTopic.Commands;
+using CK.IO.DeviceModel.ByTopic;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace CK.DeviceModel.ByTopic.Tests.Hosts;
 
-public class FakeSignatureDeviceHosts : IAutoService, ITopicTargetAwareDeviceHost
+public class FakeSignatureDeviceHosts : IAutoService, ITopicAwareDeviceHost
 {
     public string DeviceHostName { get; set; }
 
@@ -24,24 +25,38 @@ public class FakeSignatureDeviceHosts : IAutoService, ITopicTargetAwareDeviceHos
         };
     }
 
-    public ValueTask<bool> HandleAsync( IActivityMonitor monitor, ICommandDeviceTopicTarget cmd )
+    public ValueTask HandleAsync( IActivityMonitor monitor,UserMessageCollector userMessageCollector, ICommandDeviceTopics cmd )
     {
-        if( !Topics.Contains( cmd.Topic ) )
+        var topics = cmd.Topics.ToList();
+        foreach( var topic in cmd.Topics )
         {
-            return ValueTask.FromResult( false );
+            var topicName = topic.Split( "/" ).Last();
+            if( !Topics.Contains( topicName ) )
+            {
+                userMessageCollector.Error( $"{topic} does not exist on {DeviceHostName} " );
+                topics.Remove( topic );
+            }
         }
 
-        if( cmd is ITurnOffTopicCommand )
+
+        if( userMessageCollector.ErrorCount == cmd.Topics.Count )
         {
-            return ValueTask.FromResult( true );
+            return ValueTask.CompletedTask;
         }
-        else if( cmd is ITurnOnTopicCommand )
+
+        if( cmd is ISetTopicColorCommand  )
         {
-            return ValueTask.FromResult( true );
+            return ValueTask.CompletedTask;
+        }
+        else if( cmd is ISetTopicMultiColorCommand )
+        {
+            return ValueTask.CompletedTask;
         }
         else
         {
-            return ValueTask.FromResult( false );
+            userMessageCollector.Error( $" Unsupported command on {DeviceHostName} " );
+            return ValueTask.CompletedTask;
         }
+
     }
 }

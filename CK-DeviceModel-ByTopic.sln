@@ -24,11 +24,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.DeviceModel.ByTopic", "C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.DeviceModel.ByTopic.Tests", "Tests\CK.DeviceModel.ByTopic.Tests\CK.DeviceModel.ByTopic.Tests.csproj", "{816A8B69-3B0D-4750-826E-4416EF018EB3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.IO.DeviceModel", "CK.IO.DeviceModel\CK.IO.DeviceModel.csproj", "{AEFBA91E-F48E-41CF-AC04-339A20C27333}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Cris.DeviceModel", "CK.Cris.DeviceModel\CK.Cris.DeviceModel.csproj", "{B0F7F4A6-CAE0-45DE-B8AA-4CDCFE804635}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.IO.DeviceModel.ByTopic", "CK.IO.DeviceModel.ByTopic\CK.IO.DeviceModel.ByTopic.csproj", "{625CD9C9-D6A6-402C-B4A6-195AA8D82C7E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.IO.DeviceModel.ByTopic", "CK.IO.DeviceModel.ByTopic\CK.IO.DeviceModel.ByTopic.csproj", "{625CD9C9-D6A6-402C-B4A6-195AA8D82C7E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -48,14 +44,6 @@ Global
 		{816A8B69-3B0D-4750-826E-4416EF018EB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{816A8B69-3B0D-4750-826E-4416EF018EB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{816A8B69-3B0D-4750-826E-4416EF018EB3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AEFBA91E-F48E-41CF-AC04-339A20C27333}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AEFBA91E-F48E-41CF-AC04-339A20C27333}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AEFBA91E-F48E-41CF-AC04-339A20C27333}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AEFBA91E-F48E-41CF-AC04-339A20C27333}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B0F7F4A6-CAE0-45DE-B8AA-4CDCFE804635}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B0F7F4A6-CAE0-45DE-B8AA-4CDCFE804635}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B0F7F4A6-CAE0-45DE-B8AA-4CDCFE804635}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B0F7F4A6-CAE0-45DE-B8AA-4CDCFE804635}.Release|Any CPU.Build.0 = Release|Any CPU
 		{625CD9C9-D6A6-402C-B4A6-195AA8D82C7E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{625CD9C9-D6A6-402C-B4A6-195AA8D82C7E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{625CD9C9-D6A6-402C-B4A6-195AA8D82C7E}.Release|Any CPU.ActiveCfg = Release|Any CPU
