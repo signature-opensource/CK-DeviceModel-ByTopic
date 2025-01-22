@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Cris.DeviceModel;
+using CK.DeviceModel.ByTopic.Tests.Helpers;
 using CK.IO.DeviceModel;
 using CK.IO.DeviceModel.ByTopic;
 using System.Collections.Generic;
@@ -25,7 +26,7 @@ public class FakeSignatureDeviceHosts : IAutoService, ITopicAwareDeviceHost
         };
     }
 
-    public ValueTask HandleAsync( IActivityMonitor monitor,UserMessageCollector userMessageCollector, ICommandDeviceTopics cmd )
+    public ValueTask HandleAsync( IActivityMonitor monitor, UserMessageCollector userMessageCollector, ICommandDeviceTopics cmd )
     {
         var topics = cmd.Topics.ToList();
         foreach( var topic in cmd.Topics )
@@ -33,7 +34,7 @@ public class FakeSignatureDeviceHosts : IAutoService, ITopicAwareDeviceHost
             var topicName = topic.Split( "/" ).Last();
             if( !Topics.Contains( topicName ) )
             {
-                userMessageCollector.Error( $"{topic} does not exist on {DeviceHostName} " );
+                userMessageCollector.Error( MessageHelper.TopicNotFound( topic, DeviceHostName ) );
                 topics.Remove( topic );
             }
         }
@@ -44,7 +45,7 @@ public class FakeSignatureDeviceHosts : IAutoService, ITopicAwareDeviceHost
             return ValueTask.CompletedTask;
         }
 
-        if( cmd is ISetTopicColorCommand  )
+        if( cmd is ISetTopicColorCommand )
         {
             return ValueTask.CompletedTask;
         }

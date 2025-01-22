@@ -8,7 +8,9 @@ using CK.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using NUnit.Framework.Legacy;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
@@ -87,44 +89,51 @@ public class ByTopicTests
 
             ClassicAssert.NotNull( result );
             ClassicAssert.IsFalse( result.Success );
-            ClassicAssert.That(result.UserMessages.Count, Is.EqualTo( 1 ) );
-            ClassicAssert.That( result.UserMessages[0].Text == $"{deviceHostName} not found in hosts" );
+
+            var errorUsersMessages = result.UserMessages.Where( x => x.Level == UserMessageLevel.Error ).ToList();
+            ClassicAssert.That( errorUsersMessages.Count, Is.EqualTo( 1 ) );
+            ClassicAssert.That( errorUsersMessages[0].Text == $"{deviceHostName} not found in hosts" );
         }
 
     }
 
-    //[TestCaseSource( nameof( SwitchTestsCases ) )]
-    //public async Task can_turn_on_topic_Async( (string topic, List<string> deviceThatShouldBeFalse) tc )
-    //{
-    //    using( var scope = _auto.Services.CreateScope() )
-    //    {
-    //        var cbe = scope.ServiceProvider.GetRequiredService<CrisBackgroundExecutor>();
-    //        var pocoDirectory = scope.ServiceProvider.GetRequiredService<PocoDirectory>();
+    [TestCaseSource( nameof( SwitchTestsCases ) )]
+    public async Task can_turn_on_topic_Async( (string topic, List<string> devicesHostNameWhichTopicNotExist) tc )
+    {
+        using( var scope = _auto.Services.CreateScope() )
+        {
+            var cbe = scope.ServiceProvider.GetRequiredService<CrisBackgroundExecutor>();
+            var pocoDirectory = scope.ServiceProvider.GetRequiredService<PocoDirectory>();
 
-    //        var turnOnCmd = pocoDirectory.Create<ITurnOnTopicCommand>( r =>
-    //        {
-    //            r.Topic = tc.topic;
-    //            r.Colors.Add( StandardColor.Red );
-    //        } );
-    //        var result = await CrisHelper.SendCrisCommandWithResultAsync<ITurnOnTopicCommand, ISwitchTopicCommandResult>( turnOnCmd, TestHelper.Monitor, cbe );
+            var turnOnCmd = pocoDirectory.Create<ISetTopicColorCommand>( r =>
+            {
+                r.Topics.Add(tc.topic);
+                r.Color = StandardColor.Red;
+            } );
+            var result = await CrisHelper.SendCrisCommandWithResultAsync<ISetTopicColorCommand, ISetTopicCommandResult>( turnOnCmd, TestHelper.Monitor, cbe );
 
-    //        ClassicAssert.NotNull( result );
-    //        ClassicAssert.IsNotEmpty( result.ResultByDeviceName );
+            ClassicAssert.NotNull( result );
 
-    //        foreach( var keyValuePair in result.ResultByDeviceName )
-    //        {
-    //            if( tc.deviceThatShouldBeFalse.Contains( keyValuePair.Key ) )
-    //            {
-    //                ClassicAssert.False( keyValuePair.Value );
-    //            }
-    //            else
-    //            {
-    //                ClassicAssert.True( keyValuePair.Value );
-    //            }
-    //        }
-    //    }
+            if( tc.devicesHostNameWhichTopicNotExist.Count == 0 )
+            {
+                ClassicAssert.IsTrue( result.Success );
+            }
+            else
+            {
+                ClassicAssert.IsFalse( result.Success );
 
-    //}
+                var errorUsersMessages = result.UserMessages.Where( x => x.Level == UserMessageLevel.Error ).ToList();
+                ClassicAssert.That( errorUsersMessages.Count, Is.EqualTo( tc.devicesHostNameWhichTopicNotExist.Count ) );
+
+                var userMessagesText = errorUsersMessages.Select( x => x.Text );
+                foreach( var deviceHostName in tc.devicesHostNameWhichTopicNotExist )
+                {
+                    ClassicAssert.IsTrue( userMessagesText.Contains(MessageHelper.TopicNotFound( tc.topic, deviceHostName )) );
+                }
+            }
+        }
+
+    }
 
     //[TestCaseSource( nameof( SwitchTestsCases ) )]
     //public async Task can_turn_off_topic_Async( (string topic, List<string> deviceThatShouldBeFalse) tc )
@@ -158,13 +167,13 @@ public class ByTopicTests
 
     //}
 
-    //public static IEnumerable<(string topic, List<string> deviceThatShouldBeFalse)> SwitchTestsCases()
-    //{
-    //    yield return ("Test", new List<string>());
-    //    yield return ("Test-FakeLEDStrip", new List<string>() { nameof( FakeSignatureDeviceHosts ) });
-    //    yield return ("Test-FakeSignatureDevice", new List<string>() { nameof( FakeLEDStripHosts ) });
-    //    yield return ("Unknown", new List<string>() { nameof( FakeLEDStripHosts ), nameof( FakeSignatureDeviceHosts ) });
-    //}
+    public static IEnumerable<(string topic, List<string> devicesHostNameWhichTopicNotExist)> SwitchTestsCases()
+    {
+        yield return ("*/*/Test", new List<string>());
+        yield return ("*/*/Test-FakeLEDStrip", new List<string>() { nameof( FakeSignatureDeviceHosts ) });
+        yield return ("*/*/Test-FakeSignatureDevice", new List<string>() { nameof( FakeLEDStripHosts ) });
+        yield return ("*/*/Unknown", new List<string>() { nameof( FakeLEDStripHosts ), nameof( FakeSignatureDeviceHosts ) });
+    }
 
     //[TestCaseSource( nameof( MultipleSwitchTestsCases ) )]
     //public async Task can_turn_on_multiple_topic_Async( Dictionary<string, List<Switch>> tc )

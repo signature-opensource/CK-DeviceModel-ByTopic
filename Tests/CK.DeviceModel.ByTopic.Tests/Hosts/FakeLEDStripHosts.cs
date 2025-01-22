@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Cris.DeviceModel;
+using CK.DeviceModel.ByTopic.Tests.Helpers;
 using CK.IO.DeviceModel;
 using CK.IO.DeviceModel.ByTopic;
 using System.Collections.Generic;
@@ -33,7 +34,7 @@ public class FakeLEDStripHosts : IAutoService, ITopicAwareDeviceHost
             var topicName = topic.Split( "/" ).Last();
             if( !Topics.Contains( topicName ) )
             {
-                userMessageCollector.Error( $"{topic} does not exist on {DeviceHostName} " );
+                userMessageCollector.Error( MessageHelper.TopicNotFound( topic, DeviceHostName ) );
                 topics.Remove( topic );
             }
         }
