@@ -1,12 +1,10 @@
 using CK.Core;
 using CK.Cris;
-using CK.DeviceModel.ByTopic.CommandHandlers;
-using CK.DeviceModel.ByTopic.Commands;
-using CK.DeviceModel.ByTopic.IO;
+using CK.Cris.DeviceModel;
 using CK.DeviceModel.ByTopic.Tests.Helpers;
 using CK.DeviceModel.ByTopic.Tests.Hosts;
+using CK.IO.DeviceModel.ByTopic;
 using CK.Testing;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using NUnit.Framework.Legacy;
@@ -30,15 +28,12 @@ public class ByTopicTests
         configuration.FirstBinPath.Types.Add( typeof( CrisBackgroundExecutorService ),
                                               typeof( CrisBackgroundExecutor ),
                                               typeof( CrisExecutionContext ),
+                                              typeof( ScopedUserMessageCollector ),
                                               typeof( FakeLEDStripHosts ),
                                               typeof( FakeSignatureDeviceHosts ),
-                                              typeof( ISwitchLocationCommandResult ),
-                                              typeof( ITopicColor ),
-                                              typeof( ISwitchMultipleLocationsCommandResult ),
-                                              typeof( ITurnOffLocationCommand ),
-                                              typeof( ITurnOnLocationCommand ),
-                                              typeof( ITurnOffMultipleLocationsCommand ),
-                                              typeof( ITurnOnMultipleLocationsCommand ),
+                                              typeof( ISetTopicColorCommand ),
+                                              typeof( ISetTopicMultiColorCommand ),
+                                              typeof( ISetTopicCommandResult ),
                                               typeof( ByTopicCommandHandler ),
                                               typeof( Validators )
                                               );
@@ -60,23 +55,16 @@ public class ByTopicTests
             var cbe = scope.ServiceProvider.GetRequiredService<CrisBackgroundExecutor>();
             var pocoDirectory = scope.ServiceProvider.GetRequiredService<PocoDirectory>();
 
-
-            var topic = "/Test";
-            var turnOffCmd = pocoDirectory.Create<ITurnOffLocationCommand>( r =>
+            var topic = "/*/*/Test";
+            var turnOffCmd = pocoDirectory.Create<ISetTopicColorCommand>( r =>
             {
-                r.Topic = topic;
+                r.Topics.Add( topic );
+                r.Color = StandardColor.Off;
             } );
-            var result = await CrisHelper.SendCrisCommandWithResultAsync<ITurnOffLocationCommand, ISwitchLocationCommandResult>( turnOffCmd, TestHelper.Monitor, cbe );
+            var result = await CrisHelper.SendCrisCommandWithResultAsync<ISetTopicColorCommand, ISetTopicCommandResult>( turnOffCmd, TestHelper.Monitor, cbe );
 
             ClassicAssert.NotNull( result );
-            ClassicAssert.IsNotEmpty( result.ResultByDeviceName );
-
-            Assert.That( result.Topic, Is.EqualTo( topic.Substring( 1 ) ) );
-
-            foreach( var keyValuePair in result.ResultByDeviceName )
-            {
-                ClassicAssert.True( keyValuePair.Value );
-            }
+            ClassicAssert.IsTrue( result.Success );
         }
 
     }
@@ -89,277 +77,223 @@ public class ByTopicTests
             var cbe = scope.ServiceProvider.GetRequiredService<CrisBackgroundExecutor>();
             var pocoDirectory = scope.ServiceProvider.GetRequiredService<PocoDirectory>();
 
-            var turnOffCmd = pocoDirectory.Create<ITurnOffLocationCommand>( r =>
+            var deviceHostName = "?";
+            var topic = $"{deviceHostName}/*/Test";
+            var turnOffCmd = pocoDirectory.Create<ISetTopicColorCommand>( r =>
             {
-                r.Topic = "Test";
-                r.DeviceFullName = "?";
+                r.Topics.Add( topic );
+                r.Color = StandardColor.Off;
             } );
-            await FluentActions.Awaiting( async () => await CrisHelper.SendCrisCommandAsync( turnOffCmd, TestHelper.Monitor, cbe ) )
-                               .Should()
-                               .ThrowAsync<CKException>().WithMessage( "Command failed with 1 messages: Invalid DeviceFullName." );
+
+            var result = await CrisHelper.SendCrisCommandWithResultAsync<ISetTopicColorCommand, ISetTopicCommandResult>( turnOffCmd, TestHelper.Monitor, cbe );
+
+            ClassicAssert.NotNull( result );
+            ClassicAssert.IsFalse( result.Success );
+
+            var errorUsersMessages = result.UserMessages.Where( x => x.Level == UserMessageLevel.Error ).ToList();
+            Assert.That( errorUsersMessages.Count, Is.EqualTo( 1 ) );
+            Assert.That( errorUsersMessages[0].Text == $"{deviceHostName} not found in hosts" );
         }
 
     }
+    public static IEnumerable<(string topic, List<string> devicesHostNameWhichTopicNotExist, List<string> deviceHostNameTopicExist, StandardColor color)> SimpleTopicSimpleColorTestsCases()
+    {
+        var color = StandardColor.Red;
+        yield return ("*/*/Test", new List<string>(), new List<string>() { nameof( FakeLEDStripHosts ), nameof( FakeSignatureDeviceHosts ) }, color);
+        yield return ("*/*/Test-FakeLEDStrip", new List<string>() { nameof( FakeSignatureDeviceHosts ) }, new List<string>() { nameof( FakeLEDStripHosts ) }, color);
+        yield return ("*/*/Test-FakeSignatureDevice", new List<string>() { nameof( FakeLEDStripHosts ) }, new List<string>() { nameof( FakeSignatureDeviceHosts ) }, color);
+        yield return ("*/*/Unknown", new List<string>() { nameof( FakeLEDStripHosts ), nameof( FakeSignatureDeviceHosts ) }, new List<string>(), color);
 
-    [TestCaseSource( nameof( SwitchTestsCases ) )]
-    public async Task can_turn_on_location_Async( (string topic, List<string> deviceThatShouldBeFalse) tc )
+        var off = StandardColor.Off;
+        yield return ("*/*/Test", new List<string>(), new List<string>() { nameof( FakeLEDStripHosts ), nameof( FakeSignatureDeviceHosts ) }, off);
+        yield return ("*/*/Test-FakeLEDStrip", new List<string>() { nameof( FakeSignatureDeviceHosts ) }, new List<string>() { nameof( FakeLEDStripHosts ) }, off);
+        yield return ("*/*/Test-FakeSignatureDevice", new List<string>() { nameof( FakeLEDStripHosts ) }, new List<string>() { nameof( FakeSignatureDeviceHosts ) }, off);
+        yield return ("*/*/Unknown", new List<string>() { nameof( FakeLEDStripHosts ), nameof( FakeSignatureDeviceHosts ) }, new List<string>(), off);
+    }
+
+    [TestCaseSource( nameof( SimpleTopicSimpleColorTestsCases ) )]
+    public async Task can_set_topic_color_Async( (string topic, List<string> devicesHostNameWhichTopicNotExist, List<string> deviceHostNameTopicExist, StandardColor color) tc )
     {
         using( var scope = _auto.Services.CreateScope() )
         {
             var cbe = scope.ServiceProvider.GetRequiredService<CrisBackgroundExecutor>();
             var pocoDirectory = scope.ServiceProvider.GetRequiredService<PocoDirectory>();
 
-            var turnOnCmd = pocoDirectory.Create<ITurnOnLocationCommand>( r =>
+            var turnOnCmd = pocoDirectory.Create<ISetTopicColorCommand>( r =>
             {
-                r.Topic = tc.topic;
-                r.Colors.Add(pocoDirectory.Create<ITopicColor>(tc => { tc.Color = ColorLocation.Red; }) );
+                r.Topics.Add( tc.topic );
+                r.Color = tc.color;
             } );
-            var result = await CrisHelper.SendCrisCommandWithResultAsync<ITurnOnLocationCommand, ISwitchLocationCommandResult>( turnOnCmd, TestHelper.Monitor, cbe );
+            var result = await CrisHelper.SendCrisCommandWithResultAsync<ISetTopicColorCommand, ISetTopicCommandResult>( turnOnCmd, TestHelper.Monitor, cbe );
 
             ClassicAssert.NotNull( result );
-            ClassicAssert.IsNotEmpty( result.ResultByDeviceName );
 
-            foreach( var keyValuePair in result.ResultByDeviceName )
+            if( tc.devicesHostNameWhichTopicNotExist.Count == 0 )
             {
-                if( tc.deviceThatShouldBeFalse.Contains( keyValuePair.Key ) )
+                ClassicAssert.IsTrue( result.Success );
+            }
+            else
+            {
+                ClassicAssert.IsFalse( result.Success );
+
+                var errorUsersMessages = result.UserMessages.Where( x => x.Level == UserMessageLevel.Error ).ToList();
+                Assert.That( errorUsersMessages.Count, Is.EqualTo( tc.devicesHostNameWhichTopicNotExist.Count ) );
+
+                var errorUserMessagesText = errorUsersMessages.Select( x => x.Text );
+                foreach( var deviceHostName in tc.devicesHostNameWhichTopicNotExist )
                 {
-                    ClassicAssert.False( keyValuePair.Value );
+                    ClassicAssert.IsTrue( errorUserMessagesText.Contains( MessageHelper.TopicNotFound( tc.topic, deviceHostName ) ) );
+                }
+            }
+
+            var userMessageInfo = result.UserMessages.Where( x => x.Level == UserMessageLevel.Info ).ToList();
+            Assert.That( userMessageInfo.Count, Is.EqualTo( tc.deviceHostNameTopicExist.Count ) );
+            var infoUserMessagesText = userMessageInfo.Select( x => x.Text );
+            foreach( var deviceHostName in tc.deviceHostNameTopicExist )
+            {
+                if(tc.color == StandardColor.Off )
+                {
+                    ClassicAssert.IsTrue( infoUserMessagesText.Contains( MessageHelper.TopicOff( tc.topic, deviceHostName ) ) );
+
                 }
                 else
                 {
-                    ClassicAssert.True( keyValuePair.Value );
+                    ClassicAssert.IsTrue( infoUserMessagesText.Contains( MessageHelper.TopicOn( tc.topic, deviceHostName, tc.color ) ) );
+
                 }
             }
         }
-
     }
 
-    [TestCaseSource( nameof( SwitchTestsCases ) )]
-    public async Task can_turn_off_location_Async( (string topic, List<string> deviceThatShouldBeFalse) tc )
+    [TestCase( $"{nameof( FakeLEDStripHosts )}/*/Test", true,StandardColor.Red )]
+    [TestCase( $"{nameof( FakeSignatureDeviceHosts )}/*/Test", true, StandardColor.Red )]
+    [TestCase( $"{nameof( FakeSignatureDeviceHosts )}/*/Test-FakeLEDStrip", false, StandardColor.Red )]
+    [TestCase( $"{nameof( FakeLEDStripHosts )}/*/Test-FakeLEDStrip", true, StandardColor.Red )]
+    [TestCase( $"{nameof( FakeSignatureDeviceHosts )}/*/Test-FakeSignatureDevice", true, StandardColor.Red )]
+    [TestCase( $"{nameof( FakeLEDStripHosts )}/*/Test-FakeSignatureDevice", false, StandardColor.Red )]
+    [TestCase( $"{nameof( FakeLEDStripHosts )}/*/Test", true, StandardColor.Off )]
+    [TestCase( $"{nameof( FakeSignatureDeviceHosts )}/*/Test", true, StandardColor.Off )]
+    [TestCase( $"{nameof( FakeSignatureDeviceHosts )}/*/Test-FakeLEDStrip", false, StandardColor.Off )]
+    [TestCase( $"{nameof( FakeLEDStripHosts )}/*/Test-FakeLEDStrip", true, StandardColor.Off )]
+    [TestCase( $"{nameof( FakeSignatureDeviceHosts )}/*/Test-FakeSignatureDevice", true, StandardColor.Off )]
+    [TestCase( $"{nameof( FakeLEDStripHosts )}/*/Test-FakeSignatureDevice", false, StandardColor.Off )]
+    public async Task can_force_set_topic_color_specific_device_Async( string topic, bool isSuccess, StandardColor color )
     {
         using( var scope = _auto.Services.CreateScope() )
         {
             var cbe = scope.ServiceProvider.GetRequiredService<CrisBackgroundExecutor>();
             var pocoDirectory = scope.ServiceProvider.GetRequiredService<PocoDirectory>();
 
-            var turnOffCmd = pocoDirectory.Create<ITurnOffLocationCommand>( r =>
+            var turnOnCmd = pocoDirectory.Create<ISetTopicColorCommand>( r =>
             {
-                r.Topic = tc.topic;
+                r.Topics.Add( topic );
+                r.Color = color;
             } );
-            var result = await CrisHelper.SendCrisCommandWithResultAsync<ITurnOffLocationCommand, ISwitchLocationCommandResult>( turnOffCmd, TestHelper.Monitor, cbe );
+            var result = await CrisHelper.SendCrisCommandWithResultAsync<ISetTopicColorCommand, ISetTopicCommandResult>( turnOnCmd, TestHelper.Monitor, cbe );
 
             ClassicAssert.NotNull( result );
-            ClassicAssert.IsNotEmpty( result.ResultByDeviceName );
+            Assert.That( result.Success == isSuccess );
+            Assert.That( result.UserMessages.Count == 1 );
 
-            foreach( var keyValuePair in result.ResultByDeviceName )
+            var deviceHostName = topic.Split( "/" ).First();
+
+            if( isSuccess )
             {
-                if( tc.deviceThatShouldBeFalse.Contains( keyValuePair.Key ) )
+                if(color is StandardColor.Off )
                 {
-                    ClassicAssert.False( keyValuePair.Value );
+                    Assert.That( result.UserMessages[0].Text == MessageHelper.TopicOff( topic, deviceHostName ) );
                 }
                 else
                 {
-                    ClassicAssert.True( keyValuePair.Value );
+                    Assert.That( result.UserMessages[0].Text == MessageHelper.TopicOn( topic, deviceHostName, color ) );
+                }
+            }
+            else
+            {
+                Assert.That( result.UserMessages[0].Text == MessageHelper.TopicNotFound( topic, deviceHostName ) );
+
+            }
+        }
+    }
+
+    public static IEnumerable<(string topic, List<string> devicesHostNameWhichTopicNotExist, List<string> deviceHostNameTopicExist,List<StandardColor> colors)> SimpleTopicMultiColorTestsCases()
+    {
+        var colors = new List<StandardColor>() { StandardColor.Red, StandardColor.White, StandardColor.Magenta };
+        yield return ("*/*/Test", new List<string>(), new List<string>() { nameof( FakeLEDStripHosts ), nameof( FakeSignatureDeviceHosts ) }, colors);
+        yield return ("*/*/Test-FakeLEDStrip", new List<string>() { nameof( FakeSignatureDeviceHosts ) }, new List<string>() { nameof( FakeLEDStripHosts ) }, colors);
+        yield return ("*/*/Test-FakeSignatureDevice", new List<string>() { nameof(FakeLEDStripHosts) }, new List<string>() { nameof(FakeSignatureDeviceHosts) }, colors);
+        yield return ("*/*/Unknown", new List<string>() { nameof(FakeLEDStripHosts), nameof(FakeSignatureDeviceHosts) }, new List<string>(), colors);
+
+        var colorsMixWithOff = new List<StandardColor>() { StandardColor.Red, StandardColor.Off, StandardColor.Magenta };
+        yield return ("*/*/Test", new List<string>(), new List<string>() { nameof( FakeLEDStripHosts ), nameof( FakeSignatureDeviceHosts ) }, colorsMixWithOff);
+        yield return ("*/*/Test-FakeLEDStrip", new List<string>() { nameof( FakeSignatureDeviceHosts ) }, new List<string>() { nameof( FakeLEDStripHosts ) }, colorsMixWithOff);
+        yield return ("*/*/Test-FakeSignatureDevice", new List<string>() { nameof( FakeLEDStripHosts ) }, new List<string>() { nameof( FakeSignatureDeviceHosts ) }, colorsMixWithOff);
+        yield return ("*/*/Unknown", new List<string>() { nameof( FakeLEDStripHosts ), nameof( FakeSignatureDeviceHosts ) }, new List<string>(), colorsMixWithOff);
+
+        var offs = new List<StandardColor>() { StandardColor.Off, StandardColor.Off, StandardColor.Off };
+        yield return ("*/*/Test", new List<string>(), new List<string>() { nameof( FakeLEDStripHosts ), nameof( FakeSignatureDeviceHosts ) }, offs);
+        yield return ("*/*/Test-FakeLEDStrip", new List<string>() { nameof( FakeSignatureDeviceHosts ) }, new List<string>() { nameof( FakeLEDStripHosts ) }, offs);
+        yield return ("*/*/Test-FakeSignatureDevice", new List<string>() { nameof( FakeLEDStripHosts ) }, new List<string>() { nameof( FakeSignatureDeviceHosts ) }, offs);
+        yield return ("*/*/Unknown", new List<string>() { nameof( FakeLEDStripHosts ), nameof( FakeSignatureDeviceHosts ) }, new List<string>(), offs);
+    }
+
+    [TestCaseSource( nameof( SimpleTopicMultiColorTestsCases ) )]
+    public async Task can_set_topic_multiple_colors_Async( (string topic, List<string> devicesHostNameWhichTopicNotExist, List<string> deviceHostNameTopicExist, List<StandardColor> colors) tc )
+    {
+        using( var scope = _auto.Services.CreateScope() )
+        {
+            var cbe = scope.ServiceProvider.GetRequiredService<CrisBackgroundExecutor>();
+            var pocoDirectory = scope.ServiceProvider.GetRequiredService<PocoDirectory>();
+
+            var turnOnCmd = pocoDirectory.Create<ISetTopicMultiColorCommand>( r =>
+            {
+                r.Topics.Add( tc.topic );
+                r.Colors.AddRange( tc.colors );
+            } );
+            var result = await CrisHelper.SendCrisCommandWithResultAsync<ISetTopicMultiColorCommand, ISetTopicCommandResult>( turnOnCmd, TestHelper.Monitor, cbe );
+
+            ClassicAssert.NotNull( result );
+
+            if( tc.devicesHostNameWhichTopicNotExist.Count == 0 )
+            {
+                ClassicAssert.IsTrue( result.Success );
+            }
+            else
+            {
+                ClassicAssert.IsFalse( result.Success );
+
+                var errorUsersMessages = result.UserMessages.Where( x => x.Level == UserMessageLevel.Error ).ToList();
+                Assert.That( errorUsersMessages.Count, Is.EqualTo( tc.devicesHostNameWhichTopicNotExist.Count ) );
+
+                var errorUserMessagesText = errorUsersMessages.Select( x => x.Text );
+                foreach( var deviceHostName in tc.devicesHostNameWhichTopicNotExist )
+                {
+                    ClassicAssert.IsTrue( errorUserMessagesText.Contains( MessageHelper.TopicNotFound( tc.topic, deviceHostName ) ) );
+                }
+            }
+
+            var userMessageInfo = result.UserMessages.Where( x => x.Level == UserMessageLevel.Info ).ToList();
+            Assert.That( userMessageInfo.Count, Is.EqualTo( tc.deviceHostNameTopicExist.Count ) );
+            var infoUserMessagesText = userMessageInfo.Select( x => x.Text );
+            foreach( var deviceHostName in tc.deviceHostNameTopicExist )
+            {
+                if( tc.colors.All( x => x == StandardColor.Off ) )
+                {
+                    ClassicAssert.IsTrue( infoUserMessagesText.Contains( MessageHelper.TopicOff( tc.topic, deviceHostName ) ) );
+                }
+                else
+                {
+                    ClassicAssert.IsTrue( infoUserMessagesText.Contains( MessageHelper.TopicOnMultiColor( tc.topic, deviceHostName, tc.colors ) ) );
                 }
             }
         }
 
     }
-
-    public static IEnumerable<(string topic, List<string> deviceThatShouldBeFalse)> SwitchTestsCases()
-    {
-        yield return ("Test", new List<string>());
-        yield return ("Test-FakeLEDStrip", new List<string>() { nameof( FakeSignatureDeviceHosts ) });
-        yield return ("Test-FakeSignatureDevice", new List<string>() { nameof( FakeLEDStripHosts ) });
-        yield return ("Unknown", new List<string>() { nameof( FakeLEDStripHosts ), nameof( FakeSignatureDeviceHosts ) });
-    }
-
-    [TestCaseSource( nameof( MultipleSwitchTestsCases ) )]
-    public async Task can_turn_on_multiple_location_Async( Dictionary<string, List<Switch>> tc )
-    {
-        using( var scope = _auto.Services.CreateScope() )
-        {
-            var cbe = scope.ServiceProvider.GetRequiredService<CrisBackgroundExecutor>();
-            var pocoDirectory = scope.ServiceProvider.GetRequiredService<PocoDirectory>();
-
-            var list = new List<ITurnOnLocationCommand>();
-            foreach( var item in tc )
-            {
-                list.Add( pocoDirectory.Create<ITurnOnLocationCommand>( r =>
-                {
-                    r.Topic = item.Key;
-                    r.Colors.Add( pocoDirectory.Create<ITopicColor>( tc => { tc.Color = ColorLocation.Red; } ) );
-                } ) );
-            }
-
-            var turnOnMultipleCmd = pocoDirectory.Create<ITurnOnMultipleLocationsCommand>( r =>
-            {
-                r.Locations.AddRange( list );
-            } );
-            var result = await CrisHelper.SendCrisCommandWithResultAsync<ITurnOnMultipleLocationsCommand, ISwitchMultipleLocationsCommandResult>( turnOnMultipleCmd, TestHelper.Monitor, cbe );
-
-            ClassicAssert.NotNull( result );
-            ClassicAssert.IsNotEmpty( result.Results );
-
-            foreach( var switchLocationCommandResult in result.Results )
-            {
-                var allDevicesOnTopics = tc[switchLocationCommandResult.Topic];
-                ClassicAssert.NotNull( allDevicesOnTopics );
-                ClassicAssert.IsNotEmpty( allDevicesOnTopics );
-
-                foreach( var keyValuePair in switchLocationCommandResult.ResultByDeviceName )
-                {
-                    var device = allDevicesOnTopics.First( x => x.DeviceName == keyValuePair.Key );
-
-                    Assert.That( device.ShouldSuccess, Is.EqualTo( keyValuePair.Value ) );
-                }
-            }
-        }
-
-    }
-
-    [TestCaseSource( nameof( MultipleSwitchTestsCases ) )]
-    public async Task can_turn_off_multiple_location_Async( Dictionary<string, List<Switch>> tc )
-    {
-        using( var scope = _auto.Services.CreateScope() )
-        {
-            var cbe = scope.ServiceProvider.GetRequiredService<CrisBackgroundExecutor>();
-            var pocoDirectory = scope.ServiceProvider.GetRequiredService<PocoDirectory>();
-
-            var list = new List<ITurnOffLocationCommand>();
-            foreach( var item in tc )
-            {
-                list.Add( pocoDirectory.Create<ITurnOffLocationCommand>( r =>
-                {
-                    r.Topic = item.Key;
-                } ) );
-            }
-
-            var turnOffMultipleCmd = pocoDirectory.Create<ITurnOffMultipleLocationsCommand>( r =>
-            {
-                r.Locations.AddRange( list );
-            } );
-            var result = await CrisHelper.SendCrisCommandWithResultAsync<ITurnOffMultipleLocationsCommand, ISwitchMultipleLocationsCommandResult>( turnOffMultipleCmd, TestHelper.Monitor, cbe );
-
-            ClassicAssert.NotNull( result );
-            ClassicAssert.IsNotEmpty( result.Results );
-
-            foreach( var switchLocationCommandResult in result.Results )
-            {
-                var allDevicesOnTopics = tc[switchLocationCommandResult.Topic];
-                ClassicAssert.NotNull( allDevicesOnTopics );
-                ClassicAssert.IsNotEmpty( allDevicesOnTopics );
-
-                foreach( var keyValuePair in switchLocationCommandResult.ResultByDeviceName )
-                {
-                    var device = allDevicesOnTopics.First( x => x.DeviceName == keyValuePair.Key );
-
-                    Assert.That( device.ShouldSuccess, Is.EqualTo( keyValuePair.Value ) );
-                }
-            }
-        }
-
-    }
-
-    public static IEnumerable<Dictionary<string, List<Switch>>> MultipleSwitchTestsCases()
-    {
-        yield return new Dictionary<string, List<Switch>>()
-        {
-            {
-               "Test-FakeLEDStrip",
-               new List<Switch>(){
-                   new Switch
-                   {
-                       DeviceName = nameof(FakeLEDStripHosts)
-                   },
-                   new Switch
-                   {
-                       DeviceName = nameof(FakeSignatureDeviceHosts),
-                       ShouldSuccess = false
-                   }
-               }
-            },
-            {
-               "Test-FakeSignatureDevice",
-               new List<Switch>(){
-                   new Switch
-                   {
-                       DeviceName = nameof(FakeSignatureDeviceHosts)
-                   },
-                   new Switch
-                   {
-                       DeviceName = nameof(FakeLEDStripHosts),
-                       ShouldSuccess = false
-                   }
-               }
-            }
-        };
-    }
-
-    [TestCase( "Test", nameof( FakeLEDStripHosts ), true )]
-    [TestCase( "Test", nameof( FakeSignatureDeviceHosts ), true )]
-    [TestCase( "Test-FakeLEDStrip", nameof( FakeSignatureDeviceHosts ), false )]
-    [TestCase( "Test-FakeLEDStrip", nameof( FakeLEDStripHosts ), true )]
-    [TestCase( "Test-FakeSignatureDevice", nameof( FakeSignatureDeviceHosts ), true )]
-    [TestCase( "Test-FakeSignatureDevice", nameof( FakeLEDStripHosts ), false )]
-    public async Task can_force_turn_on_location_specific_device_Async( string topic, string deviceFullName, bool isSuccess )
-    {
-        using( var scope = _auto.Services.CreateScope() )
-        {
-            var cbe = scope.ServiceProvider.GetRequiredService<CrisBackgroundExecutor>();
-            var pocoDirectory = scope.ServiceProvider.GetRequiredService<PocoDirectory>();
-
-            var turnOnCmd = pocoDirectory.Create<ITurnOnLocationCommand>( r =>
-            {
-                r.Topic = topic;
-                r.Colors.Add( pocoDirectory.Create<ITopicColor>(tc => { tc.Color = ColorLocation.Red; }) );
-                r.DeviceFullName = deviceFullName;
-            } );
-            var result = await CrisHelper.SendCrisCommandWithResultAsync<ITurnOnLocationCommand, ISwitchLocationCommandResult>( turnOnCmd, TestHelper.Monitor, cbe );
-
-            ClassicAssert.NotNull( result );
-            ClassicAssert.IsNotEmpty( result.ResultByDeviceName );
-            Assert.That( result.ResultByDeviceName.Count, Is.EqualTo( 1 ) );
-
-            Assert.That( result.ResultByDeviceName[deviceFullName], Is.EqualTo( isSuccess ) );
-        }
-    }
-
-    [TestCase( "Test", nameof( FakeLEDStripHosts ), true )]
-    [TestCase( "Test", nameof( FakeSignatureDeviceHosts ), true )]
-    [TestCase( "Test-FakeLEDStrip", nameof( FakeSignatureDeviceHosts ), false )]
-    [TestCase( "Test-FakeLEDStrip", nameof( FakeLEDStripHosts ), true )]
-    [TestCase( "Test-FakeSignatureDevice", nameof( FakeSignatureDeviceHosts ), true )]
-    [TestCase( "Test-FakeSignatureDevice", nameof( FakeLEDStripHosts ), false )]
-    public async Task can_turn_off_location_specific_device_Async( string topic, string deviceFullName, bool isSuccess )
-    {
-        using( var scope = _auto.Services.CreateScope() )
-        {
-            var cbe = scope.ServiceProvider.GetRequiredService<CrisBackgroundExecutor>();
-            var pocoDirectory = scope.ServiceProvider.GetRequiredService<PocoDirectory>();
-
-            var turnOffCmd = pocoDirectory.Create<ITurnOffLocationCommand>( r =>
-            {
-                r.Topic = topic;
-                r.DeviceFullName = deviceFullName;
-            } );
-            var result = await CrisHelper.SendCrisCommandWithResultAsync<ITurnOffLocationCommand, ISwitchLocationCommandResult>( turnOffCmd, TestHelper.Monitor, cbe );
-
-            ClassicAssert.NotNull( result );
-            ClassicAssert.IsNotEmpty( result.ResultByDeviceName );
-            Assert.That( result.ResultByDeviceName.Count, Is.EqualTo( 1 ) );
-
-            Assert.That( result.ResultByDeviceName[deviceFullName], Is.EqualTo( isSuccess ) );
-        }
-    }
-
 }
 
-
-public class Switch
+public class Topic
 {
-    public string? DeviceName { get; set; }
-    public bool ShouldSuccess { get; set; } = true;
+    public string Name { get; set; }
+    public List<string> TargetDeviceHostName { get; set; } = new List<string>();
 }
-
 

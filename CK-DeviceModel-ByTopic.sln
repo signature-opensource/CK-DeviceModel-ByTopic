@@ -1,5 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35327.3
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{16174124-D3EE-4D0E-8E3D-36673E72A4EA}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
@@ -15,11 +18,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{58556926
 		Tests\TestHelper.config = Tests\TestHelper.config
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeCakeBuilder", "CodeCakeBuilder\CodeCakeBuilder.csproj", "{FF22815E-2FA4-40D2-9390-9C7A49EDD917}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeCakeBuilder", "CodeCakeBuilder\CodeCakeBuilder.csproj", "{FF22815E-2FA4-40D2-9390-9C7A49EDD917}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.DeviceModel.ByTopic", "CK.DeviceModel.ByTopic\CK.DeviceModel.ByTopic.csproj", "{3AC552B9-0B73-4674-BE65-6F714F7521AD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.DeviceModel.ByTopic", "CK.DeviceModel.ByTopic\CK.DeviceModel.ByTopic.csproj", "{3AC552B9-0B73-4674-BE65-6F714F7521AD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.DeviceModel.ByTopic.Tests", "Tests\CK.DeviceModel.ByTopic.Tests\CK.DeviceModel.ByTopic.Tests.csproj", "{816A8B69-3B0D-4750-826E-4416EF018EB3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.DeviceModel.ByTopic.Tests", "Tests\CK.DeviceModel.ByTopic.Tests\CK.DeviceModel.ByTopic.Tests.csproj", "{816A8B69-3B0D-4750-826E-4416EF018EB3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.IO.DeviceModel.ByTopic", "CK.IO.DeviceModel.ByTopic\CK.IO.DeviceModel.ByTopic.csproj", "{625CD9C9-D6A6-402C-B4A6-195AA8D82C7E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,8 +44,18 @@ Global
 		{816A8B69-3B0D-4750-826E-4416EF018EB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{816A8B69-3B0D-4750-826E-4416EF018EB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{816A8B69-3B0D-4750-826E-4416EF018EB3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{625CD9C9-D6A6-402C-B4A6-195AA8D82C7E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{625CD9C9-D6A6-402C-B4A6-195AA8D82C7E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{625CD9C9-D6A6-402C-B4A6-195AA8D82C7E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{625CD9C9-D6A6-402C-B4A6-195AA8D82C7E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{816A8B69-3B0D-4750-826E-4416EF018EB3} = {58556926-8C4D-4214-AC0D-E414F4188DC5}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7A1D2F55-1E79-4C64-BD45-BE7F49D066B1}
 	EndGlobalSection
 EndGlobal
