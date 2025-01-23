@@ -29,28 +29,52 @@ public class FakeSignatureDeviceHosts : IAutoService, ITopicAwareDeviceHost
     public ValueTask HandleAsync( IActivityMonitor monitor, UserMessageCollector userMessageCollector, ICommandDeviceTopics cmd )
     {
         var topics = cmd.Topics.ToList();
+        var localUserMessageCollector = new List<string>();
         foreach( var topic in cmd.Topics )
         {
             var topicName = topic.Split( "/" ).Last();
             if( !Topics.Contains( topicName ) )
             {
+                localUserMessageCollector.Add( MessageHelper.TopicNotFound( topic, DeviceHostName ) );
                 userMessageCollector.Error( MessageHelper.TopicNotFound( topic, DeviceHostName ) );
                 topics.Remove( topic );
             }
         }
 
-
-        if( userMessageCollector.ErrorCount == cmd.Topics.Count )
+        if( localUserMessageCollector.Count == cmd.Topics.Count )
         {
             return ValueTask.CompletedTask;
         }
 
-        if( cmd is ISetTopicColorCommand )
+        if( cmd is ISetTopicColorCommand setTopicColorCommand )
         {
+            foreach( var item in topics )
+            {
+                if( setTopicColorCommand.Color == StandardColor.Off )
+                {
+                    userMessageCollector.Info( MessageHelper.TopicOff( item, DeviceHostName ) );
+                }
+                else
+                {
+                    userMessageCollector.Info( MessageHelper.TopicOn( item, DeviceHostName, setTopicColorCommand.Color ) );
+                }
+            }
             return ValueTask.CompletedTask;
         }
-        else if( cmd is ISetTopicMultiColorCommand )
+        else if( cmd is ISetTopicMultiColorCommand setTopicMultiColorCommand )
         {
+            foreach( var item in topics )
+            {
+                if( setTopicMultiColorCommand.Colors.All( x => x == StandardColor.Off ) )
+                {
+                    userMessageCollector.Info( MessageHelper.TopicOff( item, DeviceHostName ) );
+
+                }
+                else
+                {
+                    userMessageCollector.Info( MessageHelper.TopicOnMultiColor( item, DeviceHostName, setTopicMultiColorCommand.Colors ) );
+                }
+            }
             return ValueTask.CompletedTask;
         }
         else
