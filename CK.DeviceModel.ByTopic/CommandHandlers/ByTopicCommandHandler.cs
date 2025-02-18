@@ -52,7 +52,7 @@ public class ByTopicCommandHandler : IAutoService
         {
             var deviceHostName = topic.Split( "/" )[0];
             var targets = _hosts;
-            if( !string.IsNullOrWhiteSpace( deviceHostName ) || deviceHostName != "*" )
+            if( !string.IsNullOrWhiteSpace( deviceHostName ) && deviceHostName != "*" )
             {
                 targets =_hosts.Where( x => x.DeviceHostName.StartsWith( deviceHostName ) );
             }
