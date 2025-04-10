@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.DeviceModel" Version="10.0.1" />
-    <PackageReference Include="CK.IO.DeviceModel" Version="10.0.1" />
+    <PackageReference Include="CK.DeviceModel" Version="10.1.0" />
+    <PackageReference Include="CK.IO.DeviceModel" Version="10.1.0" />
   </ItemGroup>
 </Project>
