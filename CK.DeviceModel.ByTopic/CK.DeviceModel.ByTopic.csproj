@@ -3,8 +3,8 @@
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Cris" Version="0.39.3--0018-develop" />
-    <PackageReference Include="CK.Cris.DeviceModel" Version="11.0.1--0025-develop" />
+    <PackageReference Include="CK.Cris" Version="0.39.3--0019-develop" />
+    <PackageReference Include="CK.Cris.DeviceModel" Version="11.0.1--0026-develop" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.IO.DeviceModel.ByTopic\CK.IO.DeviceModel.ByTopic.csproj" />
