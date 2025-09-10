@@ -8,8 +8,8 @@
     <PackageReference Include="CK.Testing.StObjEngine" Version="30.0.1--0051-develop" />
     <PackageReference Include="CK.Cris.BackgroundExecutor" Version="0.39.2--0036-develop" />
     <PackageReference Include="CK.Cris.Executor.Engine" Version="0.39.2--0036-develop" />
-    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="5.1.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\CK.DeviceModel.ByTopic\CK.DeviceModel.ByTopic.csproj" />
