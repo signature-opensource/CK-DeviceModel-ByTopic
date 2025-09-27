@@ -1,5 +1,4 @@
 using CK.Cris;
-using CK.DeviceModel;
 
 namespace CK.IO.DeviceModel.ByTopic;
 

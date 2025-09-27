@@ -3,6 +3,7 @@ using CK.Cris;
 using CK.Cris.DeviceModel;
 using CK.DeviceModel.ByTopic.Tests.Helpers;
 using CK.DeviceModel.ByTopic.Tests.Hosts;
+using CK.IO.DeviceModel;
 using CK.IO.DeviceModel.ByTopic;
 using CK.Testing;
 using Microsoft.Extensions.DependencyInjection;
