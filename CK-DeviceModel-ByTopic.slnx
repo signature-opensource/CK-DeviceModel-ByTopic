@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="appveyor.yml" />
+    <File Path="Directory.Build.props" />
+    <File Path="NuGet.config" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <File Path="Tests/TestHelper.config" />
+    <Project Path="Tests/CK.DeviceModel.ByTopic.Tests/CK.DeviceModel.ByTopic.Tests.csproj" />
+  </Folder>
+  <Project Path="CK.DeviceModel.ByTopic/CK.DeviceModel.ByTopic.csproj" />
+  <Project Path="CK.IO.DeviceModel.ByTopic/CK.IO.DeviceModel.ByTopic.csproj" />
+</Solution>
