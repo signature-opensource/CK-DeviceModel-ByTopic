@@ -4,12 +4,12 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.NUnit" Version="14.1.2--0001-develop" />
-    <PackageReference Include="CK.Testing.StObjEngine" Version="32.1.2--0005-develop" />
-    <PackageReference Include="CK.Cris.BackgroundExecutor" Version="0.42.3--0003-develop" />
-    <PackageReference Include="CK.Cris.Executor.Engine" Version="0.42.3--0003-develop" />
-    <PackageReference Include="NUnit3TestAdapter" Version="5.1.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="CK.Testing.NUnit" Version="15.0.0--ci.6" />
+    <PackageReference Include="CK.Testing.StObjEngine" Version="33.0.0--ci.13" />
+    <PackageReference Include="CK.Cris.BackgroundExecutor" Version="0.43.0--ci.7" />
+    <PackageReference Include="CK.Cris.Executor.Engine" Version="0.43.0--ci.7" />
+    <PackageReference Include="NUnit3TestAdapter" Version="6.1.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\CK.DeviceModel.ByTopic\CK.DeviceModel.ByTopic.csproj" />
