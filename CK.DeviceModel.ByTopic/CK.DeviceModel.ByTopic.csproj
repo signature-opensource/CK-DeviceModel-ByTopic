@@ -3,8 +3,8 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Cris" Version="3.0.0-0.cris-auth.1.ci.61" />
-    <PackageReference Include="CK.Cris.DeviceModel" Version="17.0.0-0.cris-auth.1.ci.22" />
+    <PackageReference Include="CK.Cris" Version="3.0.0-0.cris-auth.1.ci.63" />
+    <PackageReference Include="CK.Cris.DeviceModel" Version="17.0.0-0.cris-auth.1.ci.24" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.IO.DeviceModel.ByTopic\CK.IO.DeviceModel.ByTopic.csproj" />
